@@ -38,6 +38,26 @@ co-co-co/
 └── docs/        # cahier des charges, ADRs, plan de recette, plan de développement
 ```
 
+## Déploiement de preview (Vercel)
+
+`apps/web` est prêt pour un déploiement de preview automatique sur les pull requests via
+l'intégration GitHub officielle de Vercel (`apps/web/vercel.json` configure le framework et un
+`ignoreCommand` qui saute le build si la PR ne touche ni `apps/web`, ni `packages/`, ni le
+lockfile). Cette connexion nécessite un compte Vercel et ne peut pas être faite par Claude —
+à faire une fois, manuellement :
+
+1. Sur [vercel.com/new](https://vercel.com/new), importer le dépôt GitHub `lionelok/co-co-co`
+   (installe l'intégration GitHub de Vercel, qui commentera automatiquement chaque PR avec son
+   URL de preview).
+2. **Root Directory** : `apps/web` (Vercel détecte alors seul le monorepo pnpm et lance
+   `pnpm install` depuis la racine).
+3. **Framework Preset** : Next.js (auto-détecté).
+4. Déployer. Les prochains push sur `claude/cocococo-site-dev-kncxr1` (et toute future PR)
+   généreront automatiquement une preview.
+
+Il ne s'agit que d'un environnement de preview pour la revue de code — le choix de l'hébergeur de
+production reste une décision d'Annexe B à arbitrer en Phase 0 (plan de développement, §9.5).
+
 ## État d'avancement
 
 Le développement a démarré côté **`apps/web`** (co-co-co.org) : squelette Next.js/TypeScript/Tailwind
