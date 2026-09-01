@@ -10,10 +10,13 @@
   "scripts": {
     "dev": "pnpm --filter @co-co-co/web dev",
     "dev:web": "pnpm --filter @co-co-co/web dev",
+    "dev:api": "pnpm --filter @co-co-co/api dev",
     "build": "pnpm -r --filter=./apps/* build",
     "build:web": "pnpm --filter @co-co-co/web build",
+    "build:api": "pnpm --filter @co-co-co/api build",
     "lint": "pnpm -r --filter=./apps/* --filter=./packages/* lint",
     "typecheck": "pnpm -r --filter=./apps/* --filter=./packages/* typecheck",
+    "test": "pnpm --filter @co-co-co/api test",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

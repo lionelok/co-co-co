@@ -20,6 +20,10 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # Génère le client Prisma (types utilisés par apps/api) sans nécessiter
+      # de base de données — indépendant du job api-tests ci-dessous.
+      - run: pnpm --filter @co-co-co/api prisma:generate
+
       - run: pnpm format:check
 
       - run: pnpm lint
@@ -27,3 +31,42 @@ jobs:
       - run: pnpm typecheck
 
       - run: pnpm build
+
+  api-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: coco
+          POSTGRES_PASSWORD: coco
+          POSTGRES_DB: coco_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://coco:coco@localhost:5432/coco_test
+      JWT_ACCESS_SECRET: ci-test-secret-not-for-production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm --filter @co-co-co/api prisma:generate
+
+      - run: pnpm --filter @co-co-co/api exec prisma migrate deploy
+
+      - run: pnpm --filter @co-co-co/api test
+
+      - run: pnpm --filter @co-co-co/api test:e2e

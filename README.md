@@ -4,7 +4,7 @@ Plateforme digitale d'évaluation citoyenne pour la communauté congolaise (RDC 
 
 - Site public + espace membre : `co-co-co.org` ([`apps/web`](apps/web))
 - Back-office d'administration : `admin.co-co-co.org` ([`apps/admin`](apps/admin), non initialisé)
-- API : [`apps/api`](apps/api) (non initialisée)
+- API : [`apps/api`](apps/api) — authentification initialisée (sprint S1.1)
 
 ## Documentation
 
@@ -15,10 +15,15 @@ Plateforme digitale d'évaluation citoyenne pour la communauté congolaise (RDC 
 ```bash
 pnpm install
 pnpm dev:web        # co-co-co.org sur http://localhost:3000
+
+# apps/api nécessite une base PostgreSQL locale — voir apps/api/README.md
+docker compose -f infra/docker-compose.yml up -d
+pnpm --filter @co-co-co/api prisma:migrate
+pnpm dev:api        # API sur http://localhost:3001
 ```
 
-Autres commandes utiles à la racine : `pnpm build`, `pnpm lint`, `pnpm typecheck`, `pnpm format:check`
-(exécutées en CI, voir [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+Autres commandes utiles à la racine : `pnpm build`, `pnpm lint`, `pnpm typecheck`, `pnpm test`,
+`pnpm format:check` (exécutées en CI, voir [`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
 
 ## Structure du dépôt
 
@@ -29,12 +34,12 @@ co-co-co/
 ├── apps/
 │   ├── web/     # co-co-co.org — site public + espace membre (Next.js) — initialisé
 │   ├── admin/   # admin.co-co-co.org — back-office (React) — à initialiser
-│   └── api/     # API REST commune (NestJS) — à initialiser
+│   └── api/     # API REST commune (NestJS + PostgreSQL/Prisma) — authentification (S1.1)
 ├── packages/
 │   ├── ui/      # composants partagés
 │   ├── types/   # types/DTO partagés entre apps
 │   └── config/  # config partagée (tsconfig, ESLint)
-├── infra/       # Docker, IaC, scripts de déploiement — à initialiser
+├── infra/       # docker-compose (PostgreSQL local) ; IaC/déploiement production à initialiser
 └── docs/        # cahier des charges, ADRs, plan de recette, plan de développement
 ```
 
@@ -60,7 +65,13 @@ production reste une décision d'Annexe B à arbitrer en Phase 0 (plan de dével
 
 ## État d'avancement
 
-Le développement a démarré côté **`apps/web`** (co-co-co.org) : squelette Next.js/TypeScript/Tailwind
-avec page d'accueil, pages catégorie et campagne (sprint S1.5 « site vitrine »), sur données de
-démonstration. Voir [`apps/web/README.md`](apps/web/README.md) pour le détail. Le back-office, l'API
-et l'infrastructure restent à initialiser (voir le phasage du plan de développement, §5 et §8).
+- **`apps/web`** (co-co-co.org) : squelette Next.js/TypeScript/Tailwind — accueil, pages catégorie
+  et campagne (sprint S1.5 « site vitrine »), sur données de démonstration. Voir
+  [`apps/web/README.md`](apps/web/README.md).
+- **`apps/api`** : authentification (sprint S1.1) — inscription + confirmation email, connexion
+  email/mot de passe, connexion Google (OAuth2), sessions JWT + refresh token. Voir
+  [`apps/api/README.md`](apps/api/README.md).
+
+Le back-office (`apps/admin`), le reste du modèle de données (campagnes, votes, commentaires…) et
+l'infrastructure de production restent à initialiser (voir le phasage du plan de développement,
+§5 et §8).

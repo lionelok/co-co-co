@@ -1,0 +1,19 @@
+# PostgreSQL local pour le développement de apps/api.
+# Démarrage : docker compose -f infra/docker-compose.yml up -d
+# (correspond à DATABASE_URL de apps/api/.env.example)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: coco
+      POSTGRES_PASSWORD: coco
+      POSTGRES_DB: coco_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - coco_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  coco_postgres_data:
