@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import type { ReactNode } from 'react';
 import { SiteFooter } from '@/components/site-footer';
 import { SiteHeader } from '@/components/site-header';
 import './globals.css';
@@ -23,7 +24,11 @@ export const metadata: Metadata = {
     "Plateforme d'évaluation citoyenne pour la communauté congolaise (RDC et diaspora) : campagnes d'évaluation, votes pondérés, commentaires, rapports et pétitions.",
 };
 
-export default function RootLayout({ children }: LayoutProps<'/'>) {
+// `LayoutProps<'/'>` (routes typées Next.js) dépend de `.next/types`, généré
+// uniquement après un premier `next dev`/`next build` — absent sur un
+// checkout CI neuf où `typecheck` tourne avant `build`. Typage explicite,
+// portable, pour éviter cette dépendance d'ordre d'exécution.
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="fr" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-slate-50 font-sans text-slate-900">
