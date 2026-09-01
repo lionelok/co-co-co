@@ -1,0 +1,16 @@
+{
+  "name": "@co-co-co/types",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Types et DTO partagés entre les apps (web, admin, api) du monorepo CO-CO-CO.",
+  "license": "UNLICENSED",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@co-co-co/config": "workspace:*",
+    "typescript": "^5.7.2"
+  }
+}
