@@ -15,4 +15,10 @@ export class EmailService {
       `[dev] Fournisseur d'email non configuré — lien de vérification pour ${to} : ${verificationUrl}`,
     );
   }
+
+  async sendPasswordResetEmail(to: string, resetUrl: string): Promise<void> {
+    this.logger.warn(
+      `[dev] Fournisseur d'email non configuré — lien de réinitialisation pour ${to} : ${resetUrl}`,
+    );
+  }
 }

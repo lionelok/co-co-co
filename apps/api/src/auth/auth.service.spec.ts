@@ -22,11 +22,19 @@ function buildDeps() {
       findUnique: vi.fn(),
       update: vi.fn(),
     },
+    passwordResetToken: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
     $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
   };
   const jwt = { signAsync: vi.fn().mockResolvedValue('signed.jwt.token') };
   const config = { get: vi.fn().mockReturnValue('http://localhost:3000') };
-  const email = { sendVerificationEmail: vi.fn().mockResolvedValue(undefined) };
+  const email = {
+    sendVerificationEmail: vi.fn().mockResolvedValue(undefined),
+    sendPasswordResetEmail: vi.fn().mockResolvedValue(undefined),
+  };
 
   // Le constructeur d'AuthService attend PrismaService/JwtService/ConfigService/EmailService ;
   // ces doubles n'implémentent que les méthodes réellement utilisées.
@@ -132,6 +140,89 @@ describe('AuthService', () => {
       expect(result.accessToken).toBe('signed.jwt.token');
       expect(typeof result.refreshToken).toBe('string');
       expect(deps.prisma.refreshToken.create).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('requestPasswordReset', () => {
+    it('ne fait rien (silencieusement) pour un email inconnu', async () => {
+      deps.prisma.member.findUnique.mockResolvedValue(null);
+
+      await deps.service.requestPasswordReset('inconnu@example.com');
+
+      expect(deps.prisma.passwordResetToken.create).not.toHaveBeenCalled();
+      expect(deps.email.sendPasswordResetEmail).not.toHaveBeenCalled();
+    });
+
+    it('crée un jeton et envoie un email pour un compte existant', async () => {
+      deps.prisma.member.findUnique.mockResolvedValue({ id: 'm1', email: 'membre@example.com' });
+
+      await deps.service.requestPasswordReset('membre@example.com');
+
+      expect(deps.prisma.passwordResetToken.create).toHaveBeenCalledOnce();
+      expect(deps.email.sendPasswordResetEmail).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('refuse un jeton inconnu', async () => {
+      deps.prisma.passwordResetToken.findUnique.mockResolvedValue(null);
+
+      await expect(
+        deps.service.resetPassword('jeton-invalide', 'nouveau-mot-de-passe-solide'),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('refuse un jeton déjà consommé', async () => {
+      deps.prisma.passwordResetToken.findUnique.mockResolvedValue({
+        id: 't1',
+        memberId: 'm1',
+        consumedAt: new Date(),
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+
+      await expect(
+        deps.service.resetPassword('jeton-consomme', 'nouveau-mot-de-passe-solide'),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('refuse un jeton expiré', async () => {
+      deps.prisma.passwordResetToken.findUnique.mockResolvedValue({
+        id: 't1',
+        memberId: 'm1',
+        consumedAt: null,
+        expiresAt: new Date(Date.now() - 60_000),
+      });
+
+      await expect(
+        deps.service.resetPassword('jeton-expire', 'nouveau-mot-de-passe-solide'),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+
+    it('met à jour le mot de passe et révoque les sessions actives pour un jeton valide', async () => {
+      deps.prisma.passwordResetToken.findUnique.mockResolvedValue({
+        id: 't1',
+        memberId: 'm1',
+        consumedAt: null,
+        expiresAt: new Date(Date.now() + 60_000),
+      });
+
+      await deps.service.resetPassword('jeton-valide', 'nouveau-mot-de-passe-solide');
+
+      expect(deps.prisma.$transaction).toHaveBeenCalledOnce();
+      const ops = deps.prisma.$transaction.mock.calls[0][0];
+      expect(ops).toHaveLength(3);
+      expect(deps.prisma.passwordResetToken.update).toHaveBeenCalledWith({
+        where: { id: 't1' },
+        data: { consumedAt: expect.any(Date) },
+      });
+      expect(deps.prisma.member.update).toHaveBeenCalledWith({
+        where: { id: 'm1' },
+        data: { passwordHash: expect.any(String) },
+      });
+      expect(deps.prisma.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { memberId: 'm1', revokedAt: null },
+        data: { revokedAt: expect.any(Date) },
+      });
     });
   });
 });

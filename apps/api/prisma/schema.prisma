@@ -38,6 +38,7 @@ model Member {
 
   refreshTokens            RefreshToken[]
   emailVerificationTokens  EmailVerificationToken[]
+  passwordResetTokens      PasswordResetToken[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -72,4 +73,18 @@ model EmailVerificationToken {
 
   @@index([memberId])
   @@map("email_verification_tokens")
+}
+
+/// Jeton à usage unique pour la réinitialisation de mot de passe.
+model PasswordResetToken {
+  id         String    @id @default(cuid())
+  member     Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId   String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([memberId])
+  @@map("password_reset_tokens")
 }

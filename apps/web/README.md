@@ -14,18 +14,23 @@ pnpm dev:web
 
 L'application est servie sur [http://localhost:3000](http://localhost:3000).
 
+**Pour que les pages de connexion/inscription fonctionnent**, `apps/api` doit tourner en local
+(voir [`apps/api/README.md`](../api/README.md)) — copier `.env.example` en `.env.local` si l'API
+n'écoute pas sur `http://localhost:3001`. L'API n'étant pas déployée, ces pages ne fonctionnent
+pas sur la preview Vercel.
+
 ## État actuel
 
-Ce qui suit le sprint **S1.5** du plan de développement (site vitrine) :
+- Site vitrine (sprint **S1.5**) : accueil (`/`, secteurs + campagnes en vedette), page catégorie
+  (`/categories/[slug]`), page détail campagne (`/campagnes/[slug]`). Données de démonstration —
+  `src/lib/mock-data.ts` (aucune campagne réelle : le reste du modèle de données n'est branché sur
+  l'API qu'à partir de S1.2).
+- Authentification (sprint **S1.1**), branchée sur `apps/api` : inscription (`/inscription`),
+  connexion (`/connexion`, email/mot de passe + Google), mot de passe oublié
+  (`/mot-de-passe-oublie`, `/reinitialiser-mot-de-passe`), vérification d'email
+  (`/verifier-email`). Session gérée côté client (`src/lib/auth/`) — jetons en `localStorage`
+  (compromis simple pour ce sprint ; à reconsidérer avant mise en production, voir le commentaire
+  dans `token-storage.ts`).
 
-- Page d'accueil (`/`) : secteurs, campagnes en vedette.
-- Page catégorie (`/categories/[slug]`) : liste des campagnes d'une catégorie.
-- Page détail campagne (`/campagnes/[slug]`) : fiche, critères, note pondérée.
-
-Les données affichées proviennent pour l'instant de `src/lib/mock-data.ts` (aucune
-API/backend n'est encore branché — cf. `apps/api`, non initialisé). Le modèle de
-données correspond aux types partagés dans `@co-co-co/types`.
-
-**Non encore implémenté** (sprints suivants du plan) : authentification et espace
-membre (S1.1), vote pondéré (S1.4), commentaires (S1.5), rapports et pétitions
-(Phase 2).
+**Non encore implémenté** (sprints suivants du plan) : vote pondéré (S1.4), commentaires (S1.5),
+rapports et pétitions (Phase 2), renvoi d'email de vérification, routes protégées côté client.

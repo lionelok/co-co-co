@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { RateLimitGuard } from '../common/rate-limit.guard.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { GoogleOAuthGuard } from './guards/google-oauth.guard.js';
@@ -25,7 +26,7 @@ import { JwtStrategy } from './strategies/jwt.strategy.js';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy, GoogleOAuthGuard],
+  providers: [AuthService, JwtStrategy, GoogleStrategy, GoogleOAuthGuard, RateLimitGuard],
   // `PassportModule` doit être exporté : `JwtAuthGuard`/`GoogleOAuthGuard` (des
   // `AuthGuard(...)` de @nestjs/passport) sont instanciés dans d'autres modules
   // (ex. MembersModule) et ont besoin d'y résoudre `AuthModuleOptions`.

@@ -17,6 +17,9 @@ import { generateOpaqueToken, hashOpaqueToken } from './opaque-token.util.js';
 const BCRYPT_SALT_ROUNDS = 12;
 const REFRESH_TOKEN_TTL_DAYS = 30;
 const EMAIL_VERIFICATION_TTL_HOURS = 48;
+// Plus court que la vérification d'email : un lien de reset qui traîne est
+// plus sensible (accès immédiat au compte).
+const PASSWORD_RESET_TTL_HOURS = 2;
 
 export interface AuthTokens {
   accessToken: string;
@@ -111,6 +114,66 @@ export class AuthService {
       this.prisma.member.update({
         where: { id: stored.memberId },
         data: { emailVerifiedAt: new Date() },
+      }),
+    ]);
+  }
+
+  /**
+   * Demande de réinitialisation de mot de passe. Ne révèle jamais si l'email
+   * existe (réponse toujours identique côté contrôleur) — silencieux si le
+   * compte n'existe pas.
+   */
+  async requestPasswordReset(email: string): Promise<void> {
+    const member = await this.prisma.member.findUnique({ where: { email } });
+    if (!member) {
+      return;
+    }
+
+    const { token, tokenHash } = generateOpaqueToken();
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + PASSWORD_RESET_TTL_HOURS);
+
+    await this.prisma.passwordResetToken.create({
+      data: { memberId: member.id, tokenHash, expiresAt },
+    });
+
+    const webOrigin = this.config.get<string>('APP_WEB_ORIGIN', 'http://localhost:3000');
+    const resetUrl = `${webOrigin}/reinitialiser-mot-de-passe?token=${token}`;
+
+    try {
+      await this.email.sendPasswordResetEmail(member.email, resetUrl);
+    } catch (error) {
+      this.logger.error(`Échec de l'envoi de l'email de réinitialisation à ${member.email}`, error);
+    }
+  }
+
+  /**
+   * Applique un nouveau mot de passe à partir d'un jeton valide et révoque
+   * toutes les sessions actives du membre (refresh tokens) — un mot de passe
+   * qui vient de fuiter ne doit pas laisser une session ouverte ailleurs.
+   */
+  async resetPassword(rawToken: string, newPassword: string): Promise<void> {
+    const tokenHash = hashOpaqueToken(rawToken);
+    const stored = await this.prisma.passwordResetToken.findUnique({ where: { tokenHash } });
+
+    if (!stored || stored.consumedAt || stored.expiresAt < new Date()) {
+      throw new UnauthorizedException('Lien de réinitialisation invalide ou expiré.');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, BCRYPT_SALT_ROUNDS);
+
+    await this.prisma.$transaction([
+      this.prisma.passwordResetToken.update({
+        where: { id: stored.id },
+        data: { consumedAt: new Date() },
+      }),
+      this.prisma.member.update({
+        where: { id: stored.memberId },
+        data: { passwordHash },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { memberId: stored.memberId, revokedAt: null },
+        data: { revokedAt: new Date() },
       }),
     ]);
   }
