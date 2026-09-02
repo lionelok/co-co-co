@@ -1,0 +1,90 @@
+// Schéma de données — point de départ du sprint S1.1 (authentification).
+// Reprend `Member` du §4 du plan de développement ; les entités restantes
+// (Sector, Category, Campaign, Vote, Comment, Report, Petition, AuditLog…)
+// seront ajoutées au fil des sprints suivants (S1.2 et après), pour rester
+// alignées avec `@co-co-co/types`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Rôles internes (back-office) — cf. plan de développement §9.6, granularité
+/// à confirmer en Phase 0 (fusion ou séparation modérateur / rédacteur /
+/// administrateur).
+enum InternalRole {
+  MODERATOR
+  EDITOR
+  ADMIN
+  SUPER_ADMIN
+}
+
+model Member {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  /// Null pour un compte créé uniquement via Google (pas de mot de passe local).
+  passwordHash String?
+  displayName  String
+
+  emailVerifiedAt DateTime?
+  internalRole    InternalRole?
+
+  /// Identifiant Google (sub) — présent pour les comptes connectés via OAuth2 Google (§5.3 CDC).
+  googleId String? @unique
+
+  refreshTokens            RefreshToken[]
+  emailVerificationTokens  EmailVerificationToken[]
+  passwordResetTokens      PasswordResetToken[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("members")
+}
+
+/// Jeton de refresh (rotation à chaque utilisation) — on ne stocke que le hash,
+/// jamais le jeton en clair.
+model RefreshToken {
+  id        String    @id @default(cuid())
+  member    Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId  String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([memberId])
+  @@map("refresh_tokens")
+}
+
+/// Jeton à usage unique pour la confirmation d'email à l'inscription (§5.3 CDC).
+model EmailVerificationToken {
+  id         String    @id @default(cuid())
+  member     Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId   String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([memberId])
+  @@map("email_verification_tokens")
+}
+
+/// Jeton à usage unique pour la réinitialisation de mot de passe.
+model PasswordResetToken {
+  id         String    @id @default(cuid())
+  member     Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId   String
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([memberId])
+  @@map("password_reset_tokens")
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@co-co-co/config",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Configuration partagée (tsconfig, ESLint, préréglage Tailwind) pour les apps du monorepo CO-CO-CO.",
+  "license": "UNLICENSED",
+  "files": [
+    "tsconfig.base.json",
+    "eslint-preset.cjs",
+    "tailwind-preset.cjs"
+  ]
+}

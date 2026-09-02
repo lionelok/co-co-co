@@ -1,0 +1,27 @@
+{
+  "name": "co-co-co",
+  "private": true,
+  "description": "Plateforme digitale d'évaluation citoyenne pour la communauté congolaise (RDC et diaspora).",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "pnpm --filter @co-co-co/web dev",
+    "dev:web": "pnpm --filter @co-co-co/web dev",
+    "dev:api": "pnpm --filter @co-co-co/api dev",
+    "build": "pnpm -r --filter=./apps/* build",
+    "build:web": "pnpm --filter @co-co-co/web build",
+    "build:api": "pnpm --filter @co-co-co/api build",
+    "lint": "pnpm -r --filter=./apps/* --filter=./packages/* lint",
+    "typecheck": "pnpm -r --filter=./apps/* --filter=./packages/* typecheck",
+    "test": "pnpm --filter @co-co-co/api test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.9"
+  }
+}

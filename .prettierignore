@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+dist
+build
+pnpm-lock.yaml
+
+# Documents de cadrage : mise en forme laissée aux auteurs, pas à Prettier.
+docs/
